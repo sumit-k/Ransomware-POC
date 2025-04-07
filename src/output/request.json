@@ -1,0 +1,257 @@
+{
+  "name": "P1",
+  "hybrid_pipeline_software_specs": [{
+    "name": "autoai-kb_rt24.1-py3.11"
+  }],
+  "data_preprocessing": [{
+    "input": {
+      "columns": 16,
+      "rows": 270
+    },
+    "output": {
+      "columns": 16,
+      "rows": 270
+    },
+    "props": {
+      "duplicated_rows_count": 0,
+      "outliers_count": null
+    },
+    "stage": "cleansing"
+  }],
+  "label_column": "label",
+  "software_spec": {
+    "name": "hybrid_0.1"
+  },
+  "pipeline": {
+    "id": "bad4802d-2683-4b98-8ef7-4a0c7f7c82ea"
+  },
+  "training_id": "4190eecb-9890-401a-a859-3edaa91ecd62",
+  "metrics": [{
+    "context": {
+      "binary_classification": {
+        "confusion_matrix": [{
+          "fn": 0,
+          "fp": 0,
+          "tn": 20,
+          "tp": 21,
+          "true_class": "0"
+        }, {
+          "fn": 0,
+          "fp": 0,
+          "tn": 21,
+          "tp": 20,
+          "true_class": "1"
+        }],
+        "roc_curve": [{
+          "fpr": [0.0, 0.0, 0.0, 0.1, 0.1, 0.2, 0.2, 0.35, 0.35, 0.4, 0.4, 0.7, 0.7, 0.75, 0.75, 0.8, 0.8, 0.9, 0.9, 0.95, 0.95, 1.0, 1.0],
+          "thresholds": ["inf", 0.926297664642334, 0.8845348358154297, 0.8632311224937439, 0.8510129451751709, 0.8318113684654236, 0.7624726295471191, 0.6983020901679993, 0.5674415826797485, 0.5442181825637817, 0.5054994225502014, 0.26546040177345276, 0.2227637618780136, 0.21562309563159943, 0.2076825052499771, 0.19240021705627441, 0.12861338257789612, 0.1232125461101532, 0.11578194797039032, 0.09298842400312424, 0.08413580060005188, 0.05415854975581169, 0.034488774836063385],
+          "tpr": [0.0, 0.047619047619047616, 0.14285714285714285, 0.14285714285714285, 0.23809523809523808, 0.23809523809523808, 0.3333333333333333, 0.3333333333333333, 0.47619047619047616, 0.47619047619047616, 0.5714285714285714, 0.5714285714285714, 0.6666666666666666, 0.6666666666666666, 0.7142857142857143, 0.7142857142857143, 0.8095238095238095, 0.8095238095238095, 0.9047619047619048, 0.9047619047619048, 0.9523809523809523, 0.9523809523809523, 1.0],
+          "true_class": "0"
+        }, {
+          "fpr": [0.0, 0.047619047619047616, 0.047619047619047616, 0.09523809523809523, 0.09523809523809523, 0.19047619047619047, 0.19047619047619047, 0.2857142857142857, 0.2857142857142857, 0.3333333333333333, 0.3333333333333333, 0.42857142857142855, 0.42857142857142855, 0.5238095238095238, 0.5238095238095238, 0.6666666666666666, 0.6666666666666666, 0.7619047619047619, 0.7619047619047619, 0.8571428571428571, 0.8571428571428571, 1.0],
+          "thresholds": ["inf", 0.9655112624168396, 0.9458414316177368, 0.9158641695976257, 0.9070116877555847, 0.876953661441803, 0.8735050559043884, 0.8452946543693542, 0.8075997233390808, 0.7923174500465393, 0.784376859664917, 0.7636855244636536, 0.5367754697799683, 0.48916929960250854, 0.45578187704086304, 0.35052135586738586, 0.24431300163269043, 0.21476760506629944, 0.15695524215698242, 0.14585542678833008, 0.12288307398557663, 0.07370233535766602],
+          "tpr": [0.0, 0.0, 0.05, 0.05, 0.1, 0.1, 0.2, 0.2, 0.25, 0.25, 0.3, 0.3, 0.6, 0.6, 0.65, 0.65, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0],
+          "true_class": "1"
+        }]
+      },
+      "classes": [0, 1],
+      "features_importance": [{
+        "computation_type": "",
+        "features": {
+          "avg_write_speed_mbps": 0.0,
+          "write_count": 0.1496,
+          "timestamp_s": 0.1132,
+          "write_entropy_count": 0.0,
+          "write_lba_variance": 0.0995,
+          "avg_write_entropy": 0.1079,
+          "max_write_entropy": 0.0593,
+          "avg_read_speed_mbps": 0.0,
+          "read_lba_variance": 0.1354,
+          "min_write_entropy": 0.0879,
+          "total_event_count": 0.0896,
+          "read_count": 0.1577
+        },
+        "min_max_normalization": false,
+        "stage": "Mean"
+      }],
+      "intermediate_model": {
+        "composition_steps": ["Split_TrainingHoldout", "TrainingDataset_full_229_12", "Column Selection", "Datetime_FE", "TrainingDataset_full_229_12", "Preprocessor_default", "DAUB"],
+        "duration": 8309,
+        "location": {
+          "model": "4190eecb-9890-401a-a859-3edaa91ecd62/data/automl/pre_hpo_d_output/Pipeline1/model.pickle",
+          "pipeline": "4190eecb-9890-401a-a859-3edaa91ecd62/data/automl/pre_hpo_d_output/Pipeline1/pipeline.json",
+          "pipeline_model": "4190eecb-9890-401a-a859-3edaa91ecd62/data/automl/pre_hpo_d_output/Pipeline1/pipeline-model.json"
+        },
+        "name": "P1",
+        "notebook_location": "4190eecb-9890-401a-a859-3edaa91ecd62/data/automl/pre_hpo_d_output/Pipeline1/notebook.ipynb",
+        "pipeline_nodes": ["ColumnSelector", "PreprocessingTransformer", "XGBClassifier"],
+        "process": "pre_hpo_d_output",
+        "schema_location": "4190eecb-9890-401a-a859-3edaa91ecd62/data/automl/pre_hpo_d_output/Pipeline1/schema.json"
+      },
+      "phase": "pre_hpo_d_output",
+      "prediction_type": "multiclass",
+      "target_column": "label"
+    },
+    "ml_metrics": {
+      "training_roc_auc": 0.45835700925728634,
+      "holdout_average_precision": 1.0,
+      "holdout_neg_log_loss": -0.19197252439519216,
+      "training_accuracy": 0.46696286169970375,
+      "holdout_roc_auc": 0.5261904761904762,
+      "training_balanced_accuracy": 0.46682411156095366,
+      "training_f1": 0.4575117370892019,
+      "holdout_precision": 1.0,
+      "training_average_precision": 0.4956472926563967,
+      "training_neg_log_loss": -1.1187167837158423,
+      "holdout_recall": 1.0,
+      "training_precision": 0.4655120752681729,
+      "holdout_accuracy": 1.0,
+      "holdout_balanced_accuracy": 1.0,
+      "training_recall": 0.4511920827710301,
+      "holdout_f1": 1.0
+    },
+    "timestamp": "2025-04-05T19:49:46.000Z"
+  }],
+  "type": "wml-hybrid_0.1",
+  "space_id": "f11fb246-b869-418c-8172-1f2fa55051d8",
+  "schemas": {
+    "input": [{
+      "fields": [{
+        "name": "timestamp_s",
+        "type": "double"
+      }, {
+        "name": "window_duration_s",
+        "type": "double"
+      }, {
+        "name": "device_major",
+        "type": "integer"
+      }, {
+        "name": "device_minor",
+        "type": "integer"
+      }, {
+        "name": "read_count",
+        "type": "integer"
+      }, {
+        "name": "write_count",
+        "type": "integer"
+      }, {
+        "name": "avg_read_speed_mbps",
+        "type": "double"
+      }, {
+        "name": "avg_write_speed_mbps",
+        "type": "double"
+      }, {
+        "name": "read_lba_variance",
+        "type": "double"
+      }, {
+        "name": "write_lba_variance",
+        "type": "double"
+      }, {
+        "name": "min_write_entropy",
+        "type": "double"
+      }, {
+        "name": "max_write_entropy",
+        "type": "double"
+      }, {
+        "name": "avg_write_entropy",
+        "type": "double"
+      }, {
+        "name": "write_entropy_count",
+        "type": "integer"
+      }, {
+        "name": "total_event_count",
+        "type": "integer"
+      }],
+      "id": "auto_ai_kb_input_schema"
+    }],
+    "output": []
+  },
+  "content_location": {
+    "connection": {
+      "id": "8dc6867e-4052-468e-9f93-fe48facf176d"
+    },
+    "contents": [{
+      "content_format": "pipeline-node",
+      "file_name": "P1_automl.zip",
+      "location": "4190eecb-9890-401a-a859-3edaa91ecd62/assets/4190eecb-9890-401a-a859-3edaa91ecd62_P1_pre_hpo_d_output/resources/wml_model/P1_automl.zip",
+      "pipeline_node_id": "automl"
+    }, {
+      "content_format": "native",
+      "file_name": "pipeline_model.json",
+      "location": "4190eecb-9890-401a-a859-3edaa91ecd62/assets/4190eecb-9890-401a-a859-3edaa91ecd62_P1_pre_hpo_d_output/resources/wml_model/pipeline_model.json"
+    }],
+    "location": {
+      "file_name": ".",
+      "notebooks_path": "4190eecb-9890-401a-a859-3edaa91ecd62/notebooks",
+      "training": "4190eecb-9890-401a-a859-3edaa91ecd62",
+      "training_status": "4190eecb-9890-401a-a859-3edaa91ecd62/training-status.json",
+      "assets_path": "4190eecb-9890-401a-a859-3edaa91ecd62/assets",
+      "training_log": "4190eecb-9890-401a-a859-3edaa91ecd62/data/automl/training.log",
+      "bucket": "bucket-ai-test"
+    },
+    "type": "connection_asset"
+  },
+  "training_data_references": [{
+    "connection": {
+      "id": "8dc6867e-4052-468e-9f93-fe48facf176d"
+    },
+    "location": {
+      "bucket": "bucket-ai-test",
+      "file_name": "2.csv",
+      "space_id": "f11fb246-b869-418c-8172-1f2fa55051d8"
+    },
+    "schema": {
+      "fields": [{
+        "name": "timestamp_s",
+        "type": "double"
+      }, {
+        "name": "window_duration_s",
+        "type": "double"
+      }, {
+        "name": "device_major",
+        "type": "integer"
+      }, {
+        "name": "device_minor",
+        "type": "integer"
+      }, {
+        "name": "read_count",
+        "type": "integer"
+      }, {
+        "name": "write_count",
+        "type": "integer"
+      }, {
+        "name": "avg_read_speed_mbps",
+        "type": "double"
+      }, {
+        "name": "avg_write_speed_mbps",
+        "type": "double"
+      }, {
+        "name": "read_lba_variance",
+        "type": "double"
+      }, {
+        "name": "write_lba_variance",
+        "type": "double"
+      }, {
+        "name": "min_write_entropy",
+        "type": "double"
+      }, {
+        "name": "max_write_entropy",
+        "type": "double"
+      }, {
+        "name": "avg_write_entropy",
+        "type": "double"
+      }, {
+        "name": "write_entropy_count",
+        "type": "integer"
+      }, {
+        "name": "total_event_count",
+        "type": "integer"
+      }, {
+        "name": "label",
+        "type": "integer"
+      }],
+      "id": "auto_ai_kb_input_schema"
+    },
+    "type": "connection_asset"
+  }]
+}
