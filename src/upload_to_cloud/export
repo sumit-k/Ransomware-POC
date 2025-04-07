@@ -2,10 +2,4 @@ export IBM_COS_ENDPOINT_URL=""
 export IBM_COS_BUCKET_NAME=""
 export IBM_COS_ACCESS_KEY_ID=""
 export IBM_COS_SECRET_ACCESS_KEY=""
-
 export IBMCLOUD_API_KEY=""
-
-export WML_ENDPOINT=""
-#export WML_PROJECT_ID=""
-export WML_SPACE_ID=""
-
