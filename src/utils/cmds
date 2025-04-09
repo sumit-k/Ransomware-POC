@@ -2,10 +2,11 @@
 sudo dd if=/dev/urandom of=/dev/sdb oflag=direct bs=4096 status=progress & sudo dd if=/dev/sdb of=/dev/zero skip=2000 bs=4096 iflag=direct status=progress
 
 # Start collection of traces on disk sdb 
+# proces ctrl+c to stop the collection and write into a CSV file
 sudo python3 with_upload.py /dev/sdb 
 
 #Upload the file to object store 
-python3 cos.py
+python3 upload.py
 
 #Run the auto ai experiment 
-sudo python3 autoai_v2.py --cos_file "3.csv" --prediction_type binary --positive_label "label"
+sudo python3 autoai_ibm_watsonx_ai_sdk.py --cos_file "3.csv" --prediction_type binary --positive_label "label"
