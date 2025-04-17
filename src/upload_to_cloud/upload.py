@@ -79,9 +79,6 @@ def upload_file(bucket_name, key, filename):
     except Exception as e:
         print("Unable to create text file: {0}".format(e))
 
-
-
-# --- Main Execution (Modified for Upload Option) ---
 def main():
     global last_print_time_ns, csv_writer
 
@@ -95,12 +92,4 @@ def main():
 
 
 if __name__ == "__main__":
-
-    '''
-    if os.geteuid() != 0:
-        print("Error: This script requires root privileges (sudo) to run eBPF programs.", file=sys.stderr)
-        sys.exit(1)
-    '''
-
-    # Add a warning if keys are passed via command line
     main()

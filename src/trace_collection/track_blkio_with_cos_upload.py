@@ -14,26 +14,16 @@ from dotenv import load_dotenv
 from random import randrange
 
 
-# --- Try importing bcc ---
 try:
     from bcc import BPF
 except ImportError:
     print("Error: Cannot import bcc. Make sure bcc (python3-bpfcc) is installed.", file=sys.stderr)
     sys.exit(1)
 
-# --- Try importing boto3 ---
-try:
-    import boto3
-    from botocore.exceptions import NoCredentialsError, ClientError
-    BOTO3_AVAILABLE = True
-except ImportError:
-    BOTO3_AVAILABLE = False
-
-# --- Configuration ---
 WINDOW_DURATION_SEC = 2.0
 # Size of the buffer sample to read for entropy calculation (bytes)
 # Larger values give more accurate entropy but increase overhead.
-BUFFER_SAMPLE_SIZE = 64 # Keep this reasonably small (e.g., 64, 128, 256)
+BUFFER_SAMPLE_SIZE = 64 # Keep this small
 
 # --- Define eBPF C Code ---
 # Use placeholders for dynamic values (device filtering, sample size)
@@ -42,14 +32,6 @@ bpf_text_template = """
 #include <linux/blkdev.h>
 #include <linux/fs.h>
 #include <linux/pid_namespace.h> // For task_active_pid_ns
-
-// Define flags if not present in headers (may vary by kernel version)
-#ifndef REQ_OP_WRITE
-#define REQ_OP_WRITE 1 // Assume common value if not defined
-#endif
-#ifndef REQ_OP_READ
-#define REQ_OP_READ 0 // Assume common value if not defined
-#endif
 
 #define FILTER_DEV_TEMP 1
 
@@ -201,14 +183,12 @@ events_deque = deque()
 last_print_time_ns = 0
 csv_writer = None
 csv_fieldnames = [
-    'timestamp_s', 'window_duration_s', 'device_major', 'device_minor',
     'read_count', 'write_count', 'avg_read_speed_mbps', 'avg_write_speed_mbps',
     'read_lba_variance', 'write_lba_variance', 'min_write_entropy',
-    'max_write_entropy', 'avg_write_entropy', 'write_entropy_count',
-    'total_event_count', 'label'
+    'max_write_entropy', 'avg_write_entropy', 'label'
 ]
 
-# --- Process Events Callback (Unchanged CSV writing logic) ---
+# --- Process Events Callback ---
 def process_event(cpu, data, size):
     """Callback function to process data received from eBPF perf buffer."""
     global events_deque, last_print_time_ns, csv_writer
@@ -226,8 +206,6 @@ def process_event(cpu, data, size):
             entropy = calculate_shannon_entropy(buffer_sample_bytes)
         else:
             entropy = 0.0 # Assign 0 if write size was 0
-
-
 
     # Create TraceEvent
     processed_event = TraceEvent(
@@ -247,21 +225,15 @@ def process_event(cpu, data, size):
     while events_deque and events_deque[0].timestamp_s < window_start_time_s:
         events_deque.popleft()
 
-    # --- Trigger Metric Calculation & Printing Periodically (approx 1 sec) ---
-    # Use event timestamp for periodicity control relative to data flow
-    if event.ts_ns - last_print_time_ns >= 1000000000: # 1 second in ns
+    if event.ts_ns - last_print_time_ns >= 1000000000: # 1 second
         length = len(events_deque);
         if length:
-        #if events_deque:
             metrics = calculate_metrics(events_deque, WINDOW_DURATION_SEC)
             latest_event_time_s = events_deque[-1].timestamp_s
             oldest_event_time_s = events_deque[0].timestamp_s
             actual_span_s = latest_event_time_s - oldest_event_time_s
 
             row_data = {
-                'timestamp_s': f"{latest_event_time_s:.3f}",
-                'window_duration_s': f"{WINDOW_DURATION_SEC:.1f}",
-                'device_major': event.dev_major, 'device_minor': event.dev_minor,
                 'read_count': metrics['read_count'], 'write_count': metrics['write_count'],
                 'avg_read_speed_mbps': f"{metrics['avg_read_speed_bps']/1024/1024:.2f}",
                 'avg_write_speed_mbps': f"{metrics['avg_write_speed_bps']/1024/1024:.2f}",
@@ -270,8 +242,6 @@ def process_event(cpu, data, size):
                 'min_write_entropy': f"{metrics['min_write_entropy']:.3f}",
                 'max_write_entropy': f"{metrics['max_write_entropy']:.3f}",
                 'avg_write_entropy': f"{metrics['avg_write_entropy']:.3f}",
-                'write_entropy_count': metrics['write_entropy_count'],
-                'total_event_count': metrics['window_event_count'],
                 'label': randrange(2)
             }
 
@@ -280,7 +250,6 @@ def process_event(cpu, data, size):
                     csv_writer.writerow(row_data)
                 except Exception as e: print(f"\nError writing to CSV: {e}", file=sys.stderr)
 
-            # Console printing remains the same
             print("-" * 70)
             print(f"Window ending ~ {latest_event_time_s:.3f}s (Span: {actual_span_s:.3f}s, Events: {metrics['window_event_count']})")
             # ... rest of console print statements ...
@@ -288,7 +257,7 @@ def process_event(cpu, data, size):
             print(f"  Read Count : {metrics['read_count']:>6d} | Write Count : {metrics['write_count']:>6d}")
             print(f"  Read Speed : {metrics['avg_read_speed_bps']/1024/1024:>8.2f} MB/s | Write Speed : {metrics['avg_write_speed_bps']/1024/1024:>8.2f} MB/s")
             print(f"  Read LBA Var: {metrics['read_lba_variance']:>12.2e} | Write LBA Var: {metrics['write_lba_variance']:>12.2e}")
-            print(f"  Write Entropy (n={metrics['write_entropy_count']}): Min={metrics['min_write_entropy']:.3f} | Max={metrics['max_write_entropy']:.3f} | Avg={metrics['avg_write_entropy']:.3f}")
+            print(f"  Write Entropy: Min={metrics['min_write_entropy']:.3f} | Max={metrics['max_write_entropy']:.3f} | Avg={metrics['avg_write_entropy']:.3f}")
             last_print_time_ns = event.ts_ns # Update last print time based on event timestamp
         else:
              # Print zeros if window is empty but time has passed
@@ -296,56 +265,6 @@ def process_event(cpu, data, size):
              print(f"Window ending ~ {current_time_s:.3f}s (Span: 0.000s, Events: 0)")
              print(f"  (No events in window)")
              last_print_time_ns = event.ts_ns
-
-
-# --- Function to Upload to IBM COS ---
-def upload_to_ibm_cos(local_filepath, bucket_name, object_key, endpoint_url, access_key, secret_key):
-    """Uploads a local file to IBM Cloud Object Storage."""
-    if not BOTO3_AVAILABLE:
-        print("\nError: 'boto3' library not found. Cannot upload to IBM COS.")
-        print("Install it using: pip install boto3")
-        return False
-
-    print(f"\nAttempting upload to IBM COS:")
-    print(f"  Endpoint: {endpoint_url}")
-    print(f"  Bucket: {bucket_name}")
-    print(f"  Object Key: {object_key}")
-    print(f"  Local File: {local_filepath}")
-
-    try:
-        # Create S3 client configured for IBM COS
-        s3_client = boto3.client('s3',
-                                 endpoint_url=endpoint_url,
-                                 aws_access_key_id=access_key,
-                                 aws_secret_access_key=secret_key)
-
-        # Upload the file
-        print("  Uploading...")
-        s3_client.upload_file(local_filepath, bucket_name, object_key)
-        print("  Upload successful!")
-        return True
-
-    except NoCredentialsError:
-        print("Error: Credentials not found by boto3.")
-        print("Ensure IBM_COS_ACCESS_KEY_ID and IBM_COS_SECRET_ACCESS_KEY are set or passed correctly.")
-        return False
-    except ClientError as e:
-        error_code = e.response.get("Error", {}).get("Code")
-        print(f"Error uploading file: {e}")
-        if error_code == 'NoSuchBucket':
-             print(f"  -> The bucket '{bucket_name}' does not exist or you lack permissions.")
-        elif error_code == 'InvalidAccessKeyId':
-             print("  -> The Access Key ID provided is invalid.")
-        elif error_code == 'SignatureDoesNotMatch':
-             print("  -> The Secret Access Key provided is invalid.")
-        elif 'ExpiredToken' in str(e):
-             print("  -> Credentials may have expired.")
-        else:
-             print(f"  -> Check endpoint URL ('{endpoint_url}') and network connectivity.")
-        return False
-    except Exception as e:
-        print(f"An unexpected error occurred during upload: {e}")
-        return False
 
 
 # --- Main Execution (Modified for Upload Option) ---
@@ -414,10 +333,7 @@ def main(args):
 
     local_csv_filepath = args.outfile # Use the outfile path for local saving
 
-    # Main Loop with CSV File Handling and Upload Logic
     print(f"Writing metrics to local CSV file: {local_csv_filepath}")
-    #if args.upload_to_ibm_cos: 
-    #    print("Upload to IBM COS enabled.")
     print("Press Ctrl+C to stop.")
     try:
         with open(local_csv_filepath, 'w', newline='') as csvfile:
@@ -427,14 +343,12 @@ def main(args):
 
             while True:
                 try: 
+                    # details here : https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md
                     b.perf_buffer_poll(timeout=100)
                 except ValueError: 
                     break # Handle shutdown poll error
                 except Exception as poll_e: 
                     print(f"Poll Error: {poll_e}", file=sys.stderr); time.sleep(1)
-
-                # Idle stats printing (optional)
-                # ... (same as before) ...
 
     except FileNotFoundError: print(f"Error: Could not open CSV file: {local_csv_filepath}", file=sys.stderr)
     except IOError as e: print(f"Error writing to CSV '{local_csv_filepath}': {e}", file=sys.stderr)
@@ -442,53 +356,11 @@ def main(args):
     except Exception as e: print(f"\nAn unexpected error occurred: {e}", file=sys.stderr)
     finally:
         print("\nDetaching eBPF program and closing resources...")
-        # BPF resources cleaned up by 'b' destructor
-        # CSV file closed by 'with open'
-
-        # --- Attempt Upload if Flag is Set ---
-        #if args.upload_to_ibm_cos:
-        if 0:
-            if not BOTO3_AVAILABLE:
-                 print("\nUpload skipped: 'boto3' library is not installed.")
-            elif os.path.exists(local_csv_filepath):
-                 # --- Get COS Configuration ---
-                 # Prefer command line args if provided, otherwise fallback to env vars
-                 #endpoint = args.ibm_cos_endpoint_url or os.environ.get('IBM_COS_ENDPOINT_URL')
-                 load_dotenv("/home/sumit/code/export")
-
-                 endpoint = os.environ.get('IBM_COS_ENDPOINT_URL')
-                 print("Endpoint:", endpoint)
-                 bucket = args.ibm_cos_bucket_name or os.environ.get('IBM_COS_BUCKET_NAME')
-                 print("Bucket name:", bucket)
-                 access_key = args.ibm_cos_access_key or os.environ.get('IBM_COS_ACCESS_KEY_ID')
-                 print("Access key:", access_key)
-                 secret_key = args.ibm_cos_secret_key or os.environ.get('IBM_COS_SECRET_ACCESS_KEY') # Only get from arg if provided (less secure)
-                 if not secret_key: # Fallback to env var if not passed via arg
-                      secret_key = os.environ.get('IBM_COS_SECRET_ACCESS_KEY')
-
-                 print("secret key:", secret_key)
-                 # Check if all required config is present
-                 if not all([endpoint, bucket, access_key, secret_key]):
-                      print("\nUpload skipped: Missing IBM COS configuration.")
-                      print("Ensure endpoint, bucket, access key, and secret key are provided via args or environment variables:")
-                      print("  Args: --ibm-cos-endpoint-url, --ibm-cos-bucket-name, --ibm-cos-access-key, --ibm-cos-secret-key")
-                      print("  Env Vars: IBM_COS_ENDPOINT_URL, IBM_COS_BUCKET_NAME, IBM_COS_ACCESS_KEY_ID, IBM_COS_SECRET_ACCESS_KEY")
-                 else:
-                      # Determine object key (use the local filename by default)
-                      object_key = os.path.basename(local_csv_filepath)
-                      # Add a prefix if desired, e.g., object_key = f"ebpf-metrics/{object_key}"
-
-                      # Call the upload function
-                      upload_to_ibm_cos(local_csv_filepath, bucket, object_key, endpoint, access_key, secret_key)
-            else:
-                 print(f"\nUpload skipped: Local file '{local_csv_filepath}' not found.")
-        else:
-             print(f"\nLocal metrics saved to {local_csv_filepath}. Upload skipped (flag not set).")
+        print(f"\nLocal metrics saved to {local_csv_filepath}")
 
 
 if __name__ == "__main__":
     # Get current time for default filename
-    # Taking current date into consideration for the filename.
     now_dt = datetime.now() # Use datetime for better control
     default_outfile = f"block_metrics_{now_dt.strftime('%Y%m%d_%H%M%S')}.csv"
 
@@ -496,39 +368,18 @@ if __name__ == "__main__":
     from datetime import datetime
 
     parser = argparse.ArgumentParser(
-        description="Monitor block I/O with eBPF, log metrics to CSV, and optionally upload to IBM COS.",
-        epilog="Requires 'bcc', 'boto3', kernel headers, and root privileges. "
-               "Set IBM_COS_* environment variables for upload credentials (recommended)."
+        description="Monitor block I/O with eBPF, log metrics to CSV",
     )
-    # --- Monitoring Args ---
+
     parser.add_argument("device", nargs='?', default=None,
                         help="Optional: Block device to monitor (e.g., /dev/sda). Monitors ALL if omitted.")
     parser.add_argument("-o", "--outfile", default=default_outfile,
                         help=f"Local output CSV file path (default: {default_outfile})")
-
-    # --- IBM COS Upload Args ---
-    upload_group = parser.add_argument_group('IBM Cloud Object Storage Upload Options')
-    upload_group.add_argument("--upload-to-ibm-cos", action="store_true", default=False,
-                              help="Enable upload of the final CSV file to IBM COS.")
-    upload_group.add_argument("--ibm-cos-endpoint-url", default=None,
-                              help="IBM COS endpoint URL (overrides IBM_COS_ENDPOINT_URL env var). "
-                                   "Find this in your IBM Cloud COS dashboard for your bucket's region.")
-    upload_group.add_argument("--ibm-cos-bucket-name", default=None,
-                              help="IBM COS bucket name (overrides IBM_COS_BUCKET_NAME env var).")
-    upload_group.add_argument("--ibm-cos-access-key", default=None,
-                              help="IBM COS Access Key ID (overrides IBM_COS_ACCESS_KEY_ID env var).")
-    upload_group.add_argument("--ibm-cos-secret-key", default=None,
-                              help="IBM COS Secret Access Key (overrides IBM_COS_SECRET_ACCESS_KEY env var - use with caution).")
 
     args = parser.parse_args()
 
     if os.geteuid() != 0:
         print("Error: This script requires root privileges (sudo) to run eBPF programs.", file=sys.stderr)
         sys.exit(1)
-
-    # Add a warning if keys are passed via command line
-    if args.ibm_cos_secret_key:
-        print("Warning: Providing Secret Key via command-line argument is less secure.", file=sys.stderr)
-        print("Consider using environment variables (IBM_COS_SECRET_ACCESS_KEY) instead.", file=sys.stderr)
 
     main(args)
